@@ -1,0 +1,761 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Тест Прокси</title>
+<meta name="description" content="Четыре теста по Ergo Proxy — от шуточного до хардкорного.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Spectral:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+  :root{
+    color-scheme: dark;
+    --bg:#0a0e10;
+    --bg2:#0c1214;
+    --surface:#111a1f;
+    --surface2:#16232a;
+    --surface3:#1c2c34;
+    --line:#26363d;
+    --line-soft:#1a262c;
+    --text:#cdd6d8;
+    --text-dim:#8a999e;
+    --muted:#586a70;
+    --accent:#d21e2b;
+    --accent-bright:#f13341;
+    --accent-soft:rgba(210,30,43,.14);
+    --accent-line:rgba(210,30,43,.45);
+    --cyan:#6fc3cf;
+    --good:#4bbf9a;
+    --good-soft:rgba(75,191,154,.13);
+    --bad:#e0563b;
+    --bad-soft:rgba(224,86,59,.13);
+    --amber:#d9a441;
+
+    --f-display:"Oswald",system-ui,sans-serif;
+    --f-body:"Spectral",Georgia,serif;
+    --f-mono:"JetBrains Mono",ui-monospace,monospace;
+
+    --maxw:840px;
+    --r:3px;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--f-body);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(120% 90% at 50% -10%, rgba(210,30,43,.08), transparent 55%),
+      radial-gradient(140% 120% at 50% 120%, rgba(0,0,0,.55), transparent 60%);
+  }
+  body::after{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.35;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.014) 0 1px, transparent 1px 3px);
+  }
+  .wrap{position:relative;z-index:2;max-width:var(--maxw);margin:0 auto;padding:0 22px}
+
+  a{color:inherit}
+  button{font-family:inherit;cursor:pointer;color:inherit;border:none;background:none}
+  ::selection{background:var(--accent);color:#fff}
+
+  .mono{font-family:var(--f-mono)}
+  .eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--muted)}
+  .accent{color:var(--accent-bright)}
+
+  .topbar{position:sticky;top:0;z-index:20;
+    background:linear-gradient(180deg,var(--bg) 60%, rgba(10,14,16,.85));
+    border-bottom:1px solid var(--line-soft);backdrop-filter:blur(4px)}
+  .topbar-in{max-width:var(--maxw);margin:0 auto;padding:9px 22px;
+    display:flex;align-items:center;gap:14px;justify-content:space-between}
+  .brandmark{display:flex;align-items:center;gap:9px;font-family:var(--f-mono);
+    font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--text-dim)}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 8px var(--accent);animation:pulse 2.4s infinite ease-in-out}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .clock{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;color:var(--muted)}
+
+  .hero{padding:58px 0 30px;text-align:center}
+  .hero .eyebrow{display:block;margin-bottom:20px}
+  .glyphs{font-family:var(--f-mono);font-size:11px;color:var(--muted);letter-spacing:.3em;margin-bottom:14px}
+  h1.title{font-family:var(--f-display);font-weight:600;
+    font-size:clamp(52px,13vw,120px);line-height:.9;letter-spacing:.02em;
+    text-transform:uppercase;margin:0;color:var(--text);text-wrap:balance}
+  h1.title .p{color:var(--accent-bright)}
+  .subtitle{font-style:italic;color:var(--text-dim);font-size:clamp(15px,2.4vw,19px);
+    max-width:560px;margin:20px auto 6px;text-wrap:balance}
+  .cogito{font-family:var(--f-mono);font-size:11px;letter-spacing:.24em;color:var(--muted);
+    text-transform:uppercase;margin-top:26px}
+  .cogito b{color:var(--cyan);font-weight:500}
+
+  .divider{display:flex;align-items:center;gap:14px;margin:40px 0 26px;color:var(--muted)}
+  .divider::before,.divider::after{content:"";height:1px;flex:1;background:var(--line-soft)}
+  .divider span{font-family:var(--f-mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase}
+
+  .modules{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding-bottom:40px}
+  @media(max-width:620px){.modules{grid-template-columns:1fr}}
+  .card{position:relative;text-align:left;width:100%;
+    background:linear-gradient(180deg,var(--surface),var(--bg2));
+    border:1px solid var(--line);border-radius:var(--r);
+    padding:22px 22px 20px;overflow:hidden;
+    transition:border-color .22s, transform .22s, background .22s}
+  .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);
+    transform:scaleY(0);transform-origin:top;transition:transform .22s}
+  .card:hover,.card:focus-visible{border-color:var(--accent-line);transform:translateY(-2px);outline:none}
+  .card:hover::before,.card:focus-visible::before{transform:scaleY(1)}
+  .card-idx{font-family:var(--f-mono);font-size:11px;color:var(--muted);letter-spacing:.16em}
+  .card h3{font-family:var(--f-display);font-weight:500;text-transform:uppercase;letter-spacing:.03em;
+    font-size:25px;margin:10px 0 8px;color:var(--text);line-height:1.05}
+  .card p{margin:0 0 16px;color:var(--text-dim);font-size:14.5px;min-height:60px}
+  .card-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .chip{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+    padding:3px 8px;border:1px solid var(--line);border-radius:2px;color:var(--text-dim)}
+  .chip.diff-1{color:var(--good);border-color:rgba(75,191,154,.4)}
+  .chip.diff-2{color:var(--amber);border-color:rgba(217,164,65,.4)}
+  .chip.diff-3{color:var(--accent-bright);border-color:var(--accent-line)}
+  .chip.warn{color:var(--accent-bright);border-color:var(--accent-line);background:var(--accent-soft)}
+  .card-go{position:absolute;right:20px;bottom:18px;font-family:var(--f-mono);font-size:18px;color:var(--muted);
+    transition:color .2s,transform .2s}
+  .card:hover .card-go{color:var(--accent-bright);transform:translateX(3px)}
+  .best{font-family:var(--f-mono);font-size:10.5px;color:var(--good);letter-spacing:.05em;margin-top:9px}
+
+  footer.foot{padding:20px 0 46px;text-align:center;color:var(--muted);
+    font-family:var(--f-mono);font-size:11px;letter-spacing:.1em}
+  footer.foot .accent{opacity:.85}
+
+  .quiz{padding:22px 0 60px;animation:fade .35s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .qbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+  .backlink{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);padding:6px 0;transition:color .2s}
+  .backlink:hover{color:var(--accent-bright)}
+  .qmod{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);text-align:right}
+  .counter{font-family:var(--f-mono);font-size:11px;color:var(--muted);letter-spacing:.1em}
+  .progress{height:3px;background:var(--line-soft);border-radius:2px;overflow:hidden;margin:12px 0 30px}
+  .progress i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-bright));
+    width:0;transition:width .4s ease}
+
+  .qhead{font-family:var(--f-mono);font-size:11px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-bottom:14px}
+  .question{font-family:var(--f-body);font-size:clamp(21px,3.6vw,27px);line-height:1.35;
+    font-weight:500;margin:0 0 26px;text-wrap:balance;color:var(--text)}
+
+  .options{display:flex;flex-direction:column;gap:11px}
+  .opt{display:flex;align-items:flex-start;gap:13px;text-align:left;width:100%;
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+    padding:15px 17px;font-size:16px;line-height:1.45;color:var(--text);
+    transition:border-color .16s,background .16s,transform .12s}
+  .opt:hover:not(:disabled){border-color:var(--accent-line);background:var(--surface2)}
+  .opt:active:not(:disabled){transform:scale(.994)}
+  .opt:disabled{cursor:default}
+  .opt .key{font-family:var(--f-mono);font-size:12px;color:var(--muted);border:1px solid var(--line);
+    border-radius:2px;min-width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;
+    margin-top:1px;flex:none;transition:all .16s}
+  .opt.correct{border-color:var(--good);background:var(--good-soft)}
+  .opt.correct .key{background:var(--good);color:#04140e;border-color:var(--good)}
+  .opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+  .opt.wrong .key{background:var(--bad);color:#1a0a06;border-color:var(--bad)}
+  .opt.dim{opacity:.5}
+  .opt .txt{flex:1}
+
+  .note{margin-top:18px;border-left:2px solid var(--accent-line);background:var(--accent-soft);
+    padding:13px 16px;border-radius:0 var(--r) var(--r) 0;font-size:14.5px;color:var(--text-dim);animation:fade .3s ease}
+  .note b{color:var(--cyan);font-family:var(--f-mono);font-weight:500;font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;display:block;margin-bottom:4px}
+  .note.ok{border-color:var(--good);background:var(--good-soft)}
+  .note.ok b{color:var(--good)}
+
+  .qfoot{margin-top:26px;display:flex;justify-content:flex-end}
+  .btn{font-family:var(--f-mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+    padding:12px 26px;border-radius:var(--r);border:1px solid var(--accent);
+    background:var(--accent);color:#fff;transition:background .18s,transform .12s,box-shadow .18s}
+  .btn:hover{background:var(--accent-bright);box-shadow:0 4px 20px rgba(210,30,43,.3)}
+  .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:transparent;color:var(--text-dim);border-color:var(--line)}
+  .btn.ghost:hover{color:var(--text);border-color:var(--accent-line);box-shadow:none;background:var(--surface2)}
+  .btn[disabled]{opacity:.4;pointer-events:none}
+
+  .gate{max-width:520px;margin:40px auto;text-align:center;background:var(--surface);
+    border:1px solid var(--accent-line);border-radius:var(--r);padding:34px 28px;animation:fade .35s}
+  .gate .warnicon{font-size:34px}
+  .gate h2{font-family:var(--f-display);text-transform:uppercase;letter-spacing:.04em;font-weight:500;
+    font-size:26px;margin:12px 0 8px;color:var(--accent-bright)}
+  .gate p{color:var(--text-dim);font-size:15px;margin:0 0 24px}
+  .gate .btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+  .result{padding:30px 0 60px;text-align:center;animation:fade .4s ease}
+  .result .eyebrow{display:block;margin-bottom:18px}
+  .score-ring{position:relative;width:180px;height:180px;margin:6px auto 4px}
+  .score-ring svg{transform:rotate(-90deg)}
+  .score-ring .track{stroke:var(--line)}
+  .score-ring .fill{stroke:var(--accent-bright);stroke-linecap:round;
+    transition:stroke-dashoffset 1.1s cubic-bezier(.4,0,.2,1)}
+  .score-num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .score-num b{font-family:var(--f-display);font-size:46px;font-weight:600;line-height:1;color:var(--text)}
+  .score-num span{font-family:var(--f-mono);font-size:11px;letter-spacing:.16em;color:var(--muted);margin-top:5px}
+  .rank{font-family:var(--f-display);text-transform:uppercase;letter-spacing:.05em;font-weight:600;
+    font-size:clamp(28px,6vw,44px);margin:16px 0 6px;text-wrap:balance}
+  .rank.g-hi{color:var(--good)} .rank.g-mid{color:var(--amber)} .rank.g-lo{color:var(--accent-bright)}
+  .rank-msg{font-style:italic;color:var(--text-dim);max-width:520px;margin:0 auto 30px;font-size:16.5px;text-wrap:balance}
+  .result .btns{display:flex;gap:11px;justify-content:center;flex-wrap:wrap}
+
+  .persona{max-width:600px;margin:0 auto}
+  .persona .topline{margin-bottom:2px}
+  .persona .charname{font-family:var(--f-display);text-transform:uppercase;letter-spacing:.03em;
+    font-weight:600;font-size:clamp(32px,7.5vw,54px);color:var(--accent-bright);line-height:.98;margin:8px 0 4px}
+  .persona .chartag{font-style:italic;color:var(--cyan);font-size:17px}
+  .persona .cardbox{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:var(--r);padding:22px 24px;text-align:left;margin:16px 0}
+  .persona .cardbox p{margin:0 0 14px;color:var(--text);font-size:16px}
+  .persona .cardbox p:last-child{margin:0}
+  .persona .rewatch{color:var(--text-dim);font-size:14.5px}
+  .persona .rewatch b{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--cyan);display:block;margin-bottom:4px}
+  .tie-sep{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);margin:24px 0 4px;position:relative}
+  .hint{font-family:var(--f-mono);font-size:11px;color:var(--muted);letter-spacing:.08em;margin-top:22px}
+
+  @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="brandmark"><span class="dot"></span> Ромдо · Бюро&nbsp;безопасности</div>
+    <div class="clock mono" id="clock">--:--:--</div>
+  </div>
+</div>
+
+<div class="wrap" id="app"></div>
+
+<script>
+/* ============================== CHARACTERS ============================== */
+const CHARS = {
+  vincent:{name:"Винсент Ло", tag:"Тот, кто бежит от себя",
+    desc:["Ты тихий, тревожный и добрый — и всё время чувствуешь, что тебе не место там, где ты есть. Ты не рвёшься к власти: тебе бы понять, кто ты, и найти, куда вернуться.",
+      "Внутри тебя дремлет нечто куда большее, чем ты готов признать. Но ты упрямо выбираешь быть человеком, а не богом."],
+    rw:"Следи, как Винсент постепенно «вспоминает» себя — при пересмотре ранние сцены с ним читаются совершенно иначе."},
+  rel:{name:"Ре-л Мейер", tag:"Инспектор, ищущая истину",
+    desc:["Ты умна, горда и не выносишь недосказанности. Привилегия дала тебе всё, кроме ответов, — и именно за ними ты идёшь до конца, даже когда это опасно.",
+      "Снаружи ты холодна и безупречна, но внутри — живое упрямство и азарт. Комфортом купола тебя не купить."],
+    rw:"Обрати внимание на её связь с Игги и на то, как «идеальная» Ре-л меняется за стенами Ромдо."},
+  pino:{name:"Пино", tag:"Учится быть живой",
+    desc:["Ты — чистое любопытство и радость. Мир огромен и удивителен, и ты впитываешь его без страха. Именно ты чаще всех напоминаешь остальным, зачем вообще стоит жить.",
+      "Пусть кто-то зовёт тебя наивной — про чувства ты понимаешь больше, чем взрослые «настоящие» люди."],
+    rw:"Пино — эмоциональный центр сериала. Через неё авторы задают вопрос: что делает существо по-настоящему живым?"},
+  ergo:{name:"Эрго Прокси", tag:"Посланник смерти",
+    desc:["Ты мрачен, богоподобен и смертельно устал от собственного бытия. Ты видел слишком много и знаешь свою природу — и всё же ищешь смысл там, где его будто нет.",
+      "Экзистенциальные вопросы — твоя стихия. Ты и есть тот вопрос, на который никто не хочет отвечать."],
+    rw:"Держи в голове двойственность «Винсент / Эрго» с первых серий — это меняет всё восприятие сюжета."},
+  proxyone:{name:"Прокси Один", tag:"Бунтарь против судьбы",
+    desc:["Ты древен, холоден и ведёшь долгую игру. Ты узнал, какая участь уготована таким, как ты, — и решил переписать сценарий, чего бы это ни стоило.",
+      "За твоей яростью — боль преданного создания. Ты не злодей ради зла: ты тот, кому назначили смерть, а он отказался её принять."],
+    rw:"Первое упоминание о нём — в 15-й серии, а появляется он лишь в 22-й. Пересматривая, ищи, как рано тянутся к нему ниточки."},
+  monad:{name:"Монад", tag:"Любовь, отданная до конца",
+    desc:["Ты живёшь ради того, кого любишь, и готова отдать всё — память, разум, саму себя. Твоя нежность сильнее инстинкта самосохранения.",
+      "Ты — посланник жизни, и в этом красота и трагедия: ты создаёшь и жертвуешь одновременно."],
+    rw:"Монад — «посланник жизни», противовес Эрго. Её жертва объясняет половину загадок финала — пересмотри с этой мыслью."},
+  kazkis:{name:"Казкис Хаузер", tag:"Пламя и страсть",
+    desc:["Ты горяч во всех смыслах: живёшь ярко, любишь безоглядно, пьёшь и не пьянеешь. Тобой движут наслаждение и большая, невыносимая утрата.",
+      "Отними у тебя любимого человека — и твой огонь станет местью. Полумер ты не признаёшь."],
+    rw:"Казкис — Прокси Асуры, повелевающий огнём. Его линия — о любви и мести; обрати внимание на его связь с Сенекс."},
+  daedalus:{name:"Дедал Юмено", tag:"Гений на грани одержимости",
+    desc:["Ты блестящий ум с холодным сердцем и опасной привязанностью. Если ты чего-то (или кого-то) не можешь удержать — ты создашь это заново, любой ценой и без лишней морали.",
+      "Тобой движет не жестокость, а тоска и ревность одиночки, которому слишком тесно среди обычных людей."],
+    rw:"Имя Дедала и судьба его крылатого создания — прямая отсылка к мифу об Икаре. Следи за этой рифмой в финале."},
+  raul:{name:"Рауль Крид", tag:"Порядок, который ломается",
+    desc:["Ты ответственный, дисциплинированный и веришь в систему — пока личная утрата не выбивает почву. Тогда контроль оборачивается отчаянием, а верность идее — её разрушением.",
+      "Ты не злодей. Ты человек, доведённый горем до края, — что куда страшнее."],
+    rw:"Обрати внимание на арку Рауля и на тихую свидетельницу его падения — его AutoReiv Кристеву."},
+  iggy:{name:"Игги", tag:"Преданность без границ",
+    desc:["Ты заботлив, услужлив и по-настоящему предан тому, кто тебе дорог. Ты живёшь ради другого — и в этом твоя сила и твоя ловушка.",
+      "Стоит преданности перейти черту — и любовь становится клеткой. Но в основе всё равно искреннее «я хочу быть рядом»."],
+    rw:"13-я серия («Wrong Way Home») — ключ к Игги. Пересматривая начало, замечаешь, как рано проступает его привязанность."},
+  kristeva:{name:"Кристева", tag:"Тихая, надёжная, наблюдающая",
+    desc:["Ты спокойна и собранна даже там, где другие теряют себя. Ты не кричишь о своей верности — ты просто всегда рядом и делаешь, что нужно.",
+      "Твоя сила — в самообладании: ты сохраняешь ясность даже тогда, когда мир (и ты сама) даёт трещину."],
+    rw:"Проследи за Кристевой до самого финала — именно ей достаётся один из самых тёплых, человечных финальных штрихов."},
+  willbgood:{name:"Уилл Б. Гуд", tag:"Хранитель чужого счастья",
+    desc:["Ты добр и хочешь, чтобы всем вокруг было светло и весело, — и ради этого готов держать неудобную правду за дверью. Ты защищаешь чужую радость, как святыню.",
+      "Твоя тайная слабость — страх конца. Ты знаешь, что он придёт, и потому так цепляешься за вечный праздник."],
+    rw:"Уилл Б. Гуд — «добрый» Прокси Смайл-Лэнда (19-я серия). Он первым проговаривает правило: встретившиеся Прокси обязаны сражаться."},
+  mcq:{name:"MCQ", tag:"Шоумен до последнего",
+    desc:["Ты обожаешь сцену, софиты и внимание. Даже собственную драму ты подашь как эффектное шоу — с ведущим, правилами и финальным аккордом.",
+      "За твоей иронией прячется усталость от бессмертия: ты не прочь, чтобы игра наконец закончилась."],
+    rw:"MCQ — Прокси-ведущий из 15-й серии; именно ему достаётся единственный слом «четвёртой стены» во всём сериале."},
+};
+
+/* ============================== QUIZZES ============================== */
+const QUIZZES = {
+  persona:{
+    id:"persona", type:"personality", idx:"01",
+    title:"Какой ты Прокси?", diff:1, diffLabel:"Развлечение",
+    blurb:"Шуточный тест-характер: 14 вопросов — и терминал вычислит, кто ты в мире Ergo Proxy. Персонажей много, включая самих Прокси.",
+    head:"Психопрофиль гражданина",
+    questions:[
+      {q:"Купол рушится, сирены воют. Твоя первая мысль?",
+        options:[{t:"«Где мой дом и куда бежать?»",char:"vincent"},{t:"«Спокойно. В чём причина сбоя — и по порядку.»",char:"rel"},
+          {t:"«Ого, как громко и интересно!»",char:"pino"},{t:"«Наконец хоть что-то происходит.»",char:"ergo"},
+          {t:"«Значит, план пришёл в движение.»",char:"proxyone"}]},
+      {q:"Свободный вечер. Чем займёшься?",
+        options:[{t:"Гулять и всё-всё трогать",char:"pino"},{t:"Навести идеальный порядок и составить отчёт",char:"rel"},
+          {t:"Закрыться в лаборатории с личным проектом",char:"daedalus"},{t:"Налить вина и слушать тишину",char:"kazkis"},
+          {t:"Присматривать, чтобы всем было хорошо",char:"kristeva"}]},
+      {q:"Что пугает тебя больше всего?",
+        options:[{t:"Узнать, кто ты на самом деле",char:"vincent"},{t:"Потерять контроль над ситуацией",char:"raul"},
+          {t:"Смерть и исчезновение",char:"willbgood"},{t:"Вечность и бессмысленность бытия",char:"ergo"},
+          {t:"Остаться без зрителей",char:"mcq"}]},
+      {q:"Как ты относишься к правилам?",
+        options:[{t:"Правила держат мир — их надо беречь",char:"raul"},{t:"Соблюдаю, но истина выше правил",char:"rel"},
+          {t:"А что, есть правила? Ой…",char:"pino"},{t:"Правила — для тех, кто не создавал этот мир",char:"proxyone"},
+          {t:"Правила ради чужого счастья я напишу сам",char:"willbgood"}]},
+      {q:"Рядом дорогой тебе человек. Как ты это проявляешь?",
+        options:[{t:"Буду рядом и защищу любой ценой — до конца",char:"iggy"},{t:"Неуклюже, но искренне; боюсь навредить",char:"vincent"},
+          {t:"Отдам за него всё, даже саму себя",char:"monad"},{t:"Если потеряю — воссоздам, чтобы вернуть",char:"daedalus"},
+          {t:"Окружу заботой — тихо и надёжно",char:"kristeva"}]},
+      {q:"Как ты принимаешь решения?",
+        options:[{t:"Холодной логикой и анализом",char:"rel"},{t:"Ради общего порядка, даже жёстко",char:"raul"},
+          {t:"Сердцем — как чувствую",char:"pino"},{t:"Долго сомневаюсь и мучаюсь",char:"vincent"},
+          {t:"Как режиссёр сцены — чтоб вышло эффектно",char:"mcq"}]},
+      {q:"Твой девиз в одной фразе?",
+        options:[{t:"«Мыслю, следовательно, существую.»",char:"ergo"},{t:"«Я хочу знать правду.»",char:"rel"},
+          {t:"«Давайте жить и радоваться!»",char:"pino"},{t:"«Я всё исправлю сам.»",char:"daedalus"},
+          {t:"«Судьбу можно переписать.»",char:"proxyone"}]},
+      {q:"Тебя предали. Твоя реакция?",
+        options:[{t:"Сожгу дотла — это личное",char:"kazkis"},{t:"Холодно вычеркну и пойду дальше",char:"rel"},
+          {t:"Отомщу — через грандиозный, продуманный план",char:"proxyone"},{t:"Сломаюсь внутри, но улыбнусь снаружи",char:"willbgood"},
+          {t:"Буду защищать обидчика — вдруг ему плохо",char:"vincent"}]},
+      {q:"Что для тебя счастье?",
+        options:[{t:"Когда всем вокруг хорошо и весело",char:"willbgood"},{t:"Быть по-настоящему нужным кому-то одному",char:"iggy"},
+          {t:"Познавать новое каждый день",char:"pino"},{t:"Покой и конец пути",char:"ergo"},
+          {t:"Быть с любимым, что бы ни случилось",char:"monad"}]},
+      {q:"Тебе дали власть над целым городом. Что сделаешь?",
+        options:[{t:"Выстрою идеальный порядок",char:"raul"},{t:"Сохраню тайны и буду дёргать за ниточки",char:"proxyone"},
+          {t:"Устрою всем вечный праздник",char:"willbgood"},{t:"Введу строгий учёт и регламент",char:"rel"},
+          {t:"Превращу всё в грандиозное шоу",char:"mcq"}]},
+      {q:"Твоя главная слабость?",
+        options:[{t:"Привязанность, что переходит в одержимость",char:"iggy"},{t:"Гордыня",char:"rel"},
+          {t:"Страх собственной природы",char:"vincent"},{t:"Ревность гения",char:"daedalus"},
+          {t:"Любовь, ради которой забываешь себя",char:"monad"}]},
+      {q:"Как ты относишься к смерти?",
+        options:[{t:"Это конец, которого я жду",char:"ergo"},{t:"Это несправедливость — и я взбунтуюсь",char:"proxyone"},
+          {t:"Это ужас, о котором лучше не думать",char:"willbgood"},{t:"Приму, если так спасу любимого",char:"monad"},
+          {t:"Встречу с бокалом в руке",char:"kazkis"}]},
+      {q:"Идеальная атмосфера вокруг тебя?",
+        options:[{t:"Шумный парк аттракционов",char:"willbgood"},{t:"Тихая лаборатория",char:"daedalus"},
+          {t:"Бар с хорошим вином",char:"kazkis"},{t:"Сцена под софитами",char:"mcq"},
+          {t:"Уютный дом, где кого-то ждёшь",char:"kristeva"}]},
+      {q:"Тебя подводит собственное сердце. В чём именно?",
+        options:[{t:"Слишком верен(на) одному человеку",char:"iggy"},{t:"Слишком одержим(а) контролем",char:"raul"},
+          {t:"Слишком спокойна — прячу чувства",char:"kristeva"},{t:"Слишком горжусь собой",char:"rel"},
+          {t:"Слишком боюсь быть собой",char:"vincent"}]},
+    ],
+  },
+
+  basics:{
+    id:"basics", type:"knowledge", idx:"02",
+    title:"Основы сюжета", diff:2, diffLabel:"Сложно",
+    blurb:"Плотная проверка сюжета и мира: должности, купола, устройство Ромдо, кто есть кто. Легко не будет.",
+    head:"Аттестация гражданина",
+    questions:[
+      {q:"Какую должность занимает Ре-л Мейер в Ромдо?",
+        options:["Инспектор Бюро разведки граждан","Врач отдела здравоохранения","Офицер Бюро безопасности","Смотритель системы «утроб»"],correct:0,
+        note:"Ре-л — инспектор Бюро разведки (Intelligence Bureau) Ромдо и внучка Регента. Именно она ведёт расследование о Прокси."},
+      {q:"В чём заключается работа Винсента Ло в начале сериала?",
+        options:["Утилизация заражённых Cogito AutoReiv'ов","Обслуживание климат-контроля купола","Перепись новоприбывших иммигрантов","Ремонт компаньон-моделей"],correct:0,
+        note:"Винсент служит в секторе утилизации: выслеживает и уничтожает AutoReiv'ов, заражённых вирусом Cogito. Его начальник — Петро Селлер."},
+      {q:"Из какого купола Винсент прибыл в Ромдо?",
+        options:["Моск","Асура","Халос","Харос"],correct:0,
+        note:"Родина Винсента — купол Моск (частично разрушенный). Асура, Халос и Харос — тоже реальные купола мира сериала, связанные с другими Прокси."},
+      {q:"К какому типу AutoReiv относится Пино?",
+        options:["Компаньон","Энтураж","Инспектор","Смотритель"],correct:0,
+        note:"Пино — «компаньон»-модель (человекоподобная). Игги и Кристева, для сравнения, относятся к утилитарному типу «энтураж»."},
+      {q:"Чью гибель повесили на Винсента, вынудив его бежать?",
+        options:["Его AutoReiv Дороти","Кристевы","Игги","Пино"],correct:0,
+        note:"Убивают Дороти — личного AutoReiv-энтуража Винсента — и подставляют его, обвинив в убийстве. С этого и начинается его бегство."},
+      {q:"Как в Ромдо появляются новые граждане?",
+        options:["Их искусственно выращивают в системе «утроб»","Они рождаются естественно","Их привозят из других куполов","Их создают Прокси"],correct:0,
+        note:"Граждан Ромдо производят искусственно, в системе WombSys. Право на «ребёнка» даётся за статус — этот факт важен и для истории Пино."},
+      {q:"Кто правит Ромдо?",
+        options:["Регент Донов Мейер","Рауль Крид","Совет Прокси","Дедал Юмено"],correct:0,
+        note:"Формально правит Регент Донов Мейер, дед Ре-л. При этом сам он не произносит ни слова — говорит через совет AutoReiv."},
+      {q:"Что происходит с AutoReiv'ом, заражённым вирусом Cogito?",
+        options:["Он обретает самосознание и выходит из-под контроля","Он самоуничтожается","Он теряет всю память","Он перегревается и глохнет"],correct:0,
+        note:"Cogito даёт машине самосознание, эмоции и волю — после чего ей больше нельзя управлять. Название — от «cogito ergo sum»."},
+      {q:"Кто такой Дедал Юмено?",
+        options:["Глава исследования Прокси и личный врач Ре-л","Начальник Бюро безопасности","Старший советник Регента","Инженер купольных систем"],correct:0,
+        note:"Дедал — юный гений, глава Отдела здравоохранения и исследования Прокси, а заодно личный врач Ре-л. И он одержим ею."},
+      {q:"Кем были прежние «владельцы» Пино?",
+        options:["Семья Рауля Крида","Дедал Юмено","Ре-л Мейер","Приют для иммигрантов"],correct:0,
+        note:"Пино купили Рауль Крид и его жена Саманта — как ребёнка-суррогата, пока им не полагался «настоящий» младенец. Потом Пино стала лишней."},
+      {q:"Кем Ре-л приходится Регенту Ромдо?",
+        options:["Внучкой","Дочерью","Племянницей","Никем — просто однофамилица"],correct:0,
+        note:"Ре-л — внучка Регента Донова Мейера, и её привилегированный статус многое объясняет в её характере и свободе действий."},
+      {q:"Что такое Прокси в мире сериала?",
+        options:["Богоподобные существа, созданные людьми","Модель боевых AutoReiv","Правящий совет куполов","Люди, мутировавшие от Cogito"],correct:0,
+        note:"Прокси — искусственно созданные богоподобные существа, «не совсем люди и не совсем боги». Вокруг их природы построена вся тайна."},
+      {q:"Кто становится спутницей Винсента и Пино на большей части пути?",
+        options:["Ре-л Мейер","Кристева","Дороти","Саманта"],correct:0,
+        note:"К дуэту Винсент + Пино присоединяется Ре-л, оставившая Ромдо ради поиска правды о Прокси. Эта троица и есть костяк роуд-муви."},
+    ],
+  },
+
+  hardcore:{
+    id:"hardcore", type:"knowledge", idx:"03", spoiler:true,
+    title:"Хардкор", diff:3, diffLabel:"Хардкор",
+    blurb:"Природа Прокси, механика мира, тайны финала. Зубодробительно — и со спойлерами до самой последней серии.",
+    head:"Досье уровня «Прокси»",
+    questions:[
+      {q:"Кем на самом деле является Винсент Ло?",
+        options:["Эрго Прокси, «посланник смерти»","Прокси Один","Клоном Монад","Первым заражённым Cogito"],correct:0,
+        note:"Винсент — это Эрго Прокси, «посланник смерти». Человеческая личность «Винсент» — маска, под которой он бежит от своей природы."},
+      {q:"Кто «породил» Эрго Прокси, отделив от себя его часть?",
+        options:["Прокси Один","Монад","Регент Донов Мейер","Дедал Юмено"],correct:0,
+        note:"Прокси Один отделил от себя часть — свою боль и отчаяние — и так «породил» Эрго Прокси, назвав его своей тенью."},
+      {q:"Какова была изначальная цель, ради которой создали Прокси?",
+        options:["Терраформировать Землю и держать купола до возвращения людей","Охранять человечество от восставших машин","Вечно править куполами вместо людей","Хранить память вымершего человечества"],correct:0,
+        note:"Прокси — терраформирующие смотрители. Люди («Творцы») бежали в космос, а Прокси должны были восстановить Землю и содержать купола."},
+      {q:"Что должно случиться с Прокси, когда «Творцы» вернутся, а небо расчистится?",
+        options:["Они должны погибнуть от солнечного света","Они станут правителями новой Земли","Они сольются с вернувшимися людьми","Они впадут в вечную спячку"],correct:0,
+        note:"В этом весь трагизм: Прокси намеренно созданы уязвимыми к солнцу. Когда тучи расходятся и Творцы возвращаются — Прокси обречены."},
+      {q:"Чем Винсент/Эрго уникален среди Прокси?",
+        options:["Он Прокси, созданный Прокси, и не гибнет от солнца","Он единственный без клеток Amrita","Он наполовину AutoReiv","Он не привязан ни к одному куполу"],correct:0,
+        note:"Эрго — «Прокси, рождённый Прокси», он ближе к человеку и переживает солнечный свет. На его выживании и держится весь замысел Прокси Один."},
+      {q:"Какую роль в мире Прокси играет Монад?",
+        options:["Прокси Мосока, «посланник жизни»","Прокси Асуры, «посланник огня»","Страж системы «утроб» Ромдо","Прокси-двойник купола Офелия"],correct:0,
+        note:"Монад — «посланник жизни», противовес Эрго-смерти, Прокси купола Моск. На её кулоне цифра 13, на кулоне Прокси Один — единица."},
+      {q:"Кем при жизни был «Казкис Хаузер»?",
+        options:["Прокси Асуры, повелевающим огнём","Прокси Мосока","Прокси лунного света","Первым Регентом Ромдо"],correct:0,
+        note:"Казкис — Прокси купола Асура, «посланник света», единственный, кто управляет огнём. Пьёт без конца, но не пьянеет."},
+      {q:"За что Казкис преследует Винсента?",
+        options:["Винсент убил его возлюбленную, Прокси Сенекс","Винсент разрушил его купол Асура","Винсент похитил его способность к огню","Винсент предал Прокси Один"],correct:0,
+        note:"Эрго убил Сенекс — возлюбленную Казкиса — прежде, чем тот успел с ней воссоединиться. За это Казкис и охотится на Винсента."},
+      {q:"Что происходит с Игги в 13-й серии?",
+        options:["Заражённый Cogito, он из ревности запирает Ре-л и гибнет","Он жертвует собой, спасая Винсента","Он раскрывается как шпион Дедала","Он превращается в Прокси"],correct:0,
+        note:"Заражённый Cogito Игги обращает преданность в ревность, похищает Ре-л «ради её защиты» — и погибает. Ре-л добивает и хоронит остаток."},
+      {q:"Кто такая «Реал», которую создаёт Дедал?",
+        options:["Клон Монад с лицом Ре-л","Младшая сестра Ре-л","Ожившая AutoReiv Дороти","Новый Прокси Ромдо"],correct:0,
+        note:"Реал — клон Монад с внешностью Ре-л, выращенный Дедалом из тела Монад. Она обретает крылья и улетает вслед за Эрго."},
+      {q:"Из чего Дедал делает оружие против Прокси, имитирующее солнце?",
+        options:["Из тела Монад","Из клеток Amrita Казкиса","Из ядра купола Ромдо","Из вируса Cogito"],correct:0,
+        note:"Анти-Прокси лучи, копирующие губительный солнечный свет, Дедал создаёт, используя тело Монад. Мрачная деталь его исследований."},
+      {q:"Что происходит, если два Прокси встречаются вблизи «Пробуждения»?",
+        options:["Они вынуждены сражаться насмерть","Они сливаются в одно существо","Они мгновенно теряют силы","Один подчиняет волю другого"],correct:0,
+        note:"«Пульс Пробуждения» вынуждает Прокси убивать друг друга — встроенный механизм отбраковки. Правило впервые проговаривает Уилл Б. Гуд."},
+      {q:"Почему Донов Мейер приказал уничтожить Моск ракетами?",
+        options:["Из ревности: Прокси Один ушёл жить с Монад в Моск","Моск объявил Ромдо войну","В Моске вспыхнул неуправляемый Cogito","Чтобы скрыть прошлое Ре-л"],correct:0,
+        note:"Донов счёл, что Монад «украла бога Ромдо»: Прокси Один оставил ему город и ушёл к ней в Моск. Регент из ревности стёр Моск ракетами."},
+      {q:"Как называется ядерная ракета, выпущенная по ходу сериала?",
+        options:["«Rapture»","«Boomerang»","«Amrita»","«Meditatio»"],correct:0,
+        note:"Ракета носит кощунственное имя «Rapture» («Вознесение»). Boomerang — это про корабль/звезду людей, Amrita — клетки Прокси, Meditatio — метка на карточках серий."},
+      {q:"Кто в финале убивает Регента Донова Мейера?",
+        options:["Прокси Один","Эрго Прокси","Рауль Крид","Реал"],correct:0,
+        note:"Регента убивает Прокси Один — он же выпустил ракету «Rapture» и уничтожил AutoReiv «Амнезия», хранивший память Винсента."},
+    ],
+  },
+
+  hidden:{
+    id:"hidden", type:"knowledge", idx:"04",
+    title:"Скрытое и deep-cut", diff:3, diffLabel:"Deep-cut",
+    blurb:"Продакшн, музыка, скрытые отсылки и символика. На эрудицию настоящего фаната — от MEDITATIO до Коупленда.",
+    head:"Архив: закадровое",
+    questions:[
+      {q:"Эндинг сериала — это композиция какой группы?",
+        options:["Radiohead","Coldplay","Portishead","Muse"],correct:0,
+        note:"В эндинге звучит «Paranoid Android» Radiohead — единственный не написанный специально для сериала трек. Группа сперва отказала, но одобрила, увидев превью."},
+      {q:"Кто исполнил опенинг «Kiri»?",
+        options:["Monoral","Boom Boom Satellites","Supercar","The Pillows"],correct:0,
+        note:"Опенинг «Kiri» (яп. «туман») исполнил дуэт Monoral. Появляется он лишь с 3-й серии — первые две идут без опенинга."},
+      {q:"Совет, через который правит Регент, назван именами кого?",
+        options:["Философов","Античных богов","Композиторов","Земных городов"],correct:0,
+        note:"Четыре AutoReiv-советника зовутся Деррида, Лакан, Гуссерль и Беркли — в честь философов. А сами статуи скопированы с фигур Микеланджело."},
+      {q:"В честь кого назван AutoReiv по имени Кристева?",
+        options:["Юлии Кристевой","Ханны Арендт","Симоны Вейль","Марии Кюри"],correct:0,
+        note:"Кристева названа в честь философа и психоаналитика Юлии Кристевой. Имена в сериале — сплошь отсылки к мыслителям (Делёз и Гваттари — AutoReiv'ы Дедала)."},
+      {q:"Имя «Пино» отсылает прежде всего к какому персонажу?",
+        options:["Пиноккио","Питеру Пэну","Астробою","Пеппи"],correct:0,
+        note:"Пино — от Пиноккио: как и он, она мечтает стать «настоящим ребёнком», а Винсент играет при ней роль Сверчка-совести."},
+      {q:"Название вируса Cogito и слово «Ergo» в заглавии восходят к формуле…",
+        options:["«Cogito ergo sum»","«Memento mori»","«Deus ex machina»","«Tabula rasa»"],correct:0,
+        note:"«Cogito ergo sum» Декарта — «мыслю, следовательно, существую». Отсюда и «Ergo» в названии, и имя вируса, дающего машинам сознание."},
+      {q:"Какая студия сняла Ergo Proxy?",
+        options:["Manglobe","Madhouse","Bones","Production I.G"],correct:0,
+        note:"Сериал сделала студия Manglobe (2006), позже известная по «Самураю Чамплу». Режиссёр — Сюко Мурасэ, сценарист — Дай Сато."},
+      {q:"Кто выступил режиссёром сериала?",
+        options:["Сюко Мурасэ","Синъитиро Ватанабэ","Мамору Осии","Дай Сато"],correct:0,
+        note:"Режиссёр — Сюко Мурасэ. Дай Сато здесь ловушка: он сценарист (и его имя даже мелькает на надгробии в прологе 10-й серии как пасхалка)."},
+      {q:"Латинское слово, которым помечена титульная карточка КАЖДОГО эпизода?",
+        options:["Meditatio","Memento","Cogito","Requiem"],correct:0,
+        note:"Каждая серия на карточке помечена словом «MEDITATIO» («размышление») и римским номером — сквозная фишка всех 23 эпизодов."},
+      {q:"Гражданский ID Ре-л «RE-L124C41+» отсылает к роману…",
+        options:["«Ральф 124C 41+»","«Мы»","«1984»","«О дивный новый мир»"],correct:0,
+        note:"«124C41+» — оммаж роману Хьюго Гернсбека «Ральф 124C 41+» (1911). Заодно это и название 7-й серии."},
+      {q:"Сабтайтлы 18-й и 21-й серий («Life After God» и «Shampoo Planet») — это названия романов какого писателя?",
+        options:["Дугласа Коупленда","Филипа Дика","Уильяма Гибсона","Курта Воннегута"],correct:0,
+        note:"Оба сабтайтла — названия романов Дугласа Коупленда. Сериал вообще любит прятать в заголовках книги, песни и философские термины."},
+      {q:"Сцена гибели жены и ребёнка Рауля (коляска на лестнице) отсылает к фильму…",
+        options:["«Броненосец „Потёмкин“»","«Метрополис»","«Бегущий по лезвию»","«Космическая одиссея 2001»"],correct:0,
+        note:"Коляска, катящаяся по ступеням, — прямая цитата «одесской лестницы» из «Броненосца „Потёмкин“» Эйзенштейна (1925)."},
+      {q:"Чем знаменит 15-й эпизод?",
+        options:["Прокси MCQ ведёт смертельное игровое шоу","В нём нет ни одной реплики","Он целиком нарисован в 3D","Это флешбэк на тысячу лет назад"],correct:0,
+        note:"15-я серия — сюрреалистичное игровое шоу, которое ведёт Прокси MCQ. Именно здесь впервые упоминается Прокси Один (появится он лишь в 22-й)."},
+      {q:"Ведущий-Прокси из 15-й серии требует, чтобы Винсент набрал…",
+        options:["1 000 000 очков за 30 минут","100 очков за 10 минут","13 верных ответов подряд","больше очков, чем 300 Прокси"],correct:0,
+        note:"Условие MCQ: миллион очков за полчаса. Победа — свобода Винсента и гибель ведущего; проигрыш — смерть. Викторина внутри сериала про Прокси — идеальная мета-ирония."},
+      {q:"Корабль героев «Центзон» назван в честь…",
+        options:["ацтекских «400 кроликов»","греческих девяти муз","созвездия южного неба","египетского бога солнца"],correct:0,
+        note:"«Центзон» — от Центзон Тоточтин, ацтекских «400 кроликов», богов хмеля и веселья. Отсюда и сквозной мотив кролика (плюс костюм Пино)."},
+      {q:"Статуи в покоях Регента копируют работы какого скульптора?",
+        options:["Микеланджело","Родена","Бернини","Донателло"],correct:0,
+        note:"Фигуры советников скопированы с надгробных скульптур Микеланджело в капелле Медичи во Флоренции — один из многих визуальных оммажей сериала."},
+    ],
+  },
+};
+
+const ORDER = ["persona","basics","hardcore","hidden"];
+
+/* ============================== STORAGE ============================== */
+function loadBest(){ try{ return JSON.parse(localStorage.getItem("ep_best")||"{}"); }catch(e){ return {}; } }
+function saveBest(id,val){ try{ const b=loadBest(); if(!(id in b)||val>b[id]){ b[id]=val; localStorage.setItem("ep_best",JSON.stringify(b)); } }catch(e){} }
+
+const app = document.getElementById("app");
+
+/* ============================== CLOCK ============================== */
+function tick(){ const d=new Date(); const p=n=>String(n).padStart(2,"0");
+  const el=document.getElementById("clock"); if(el) el.textContent=`${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
+tick(); setInterval(tick,1000);
+
+/* ============================== HOME ============================== */
+function renderHome(){
+  const best=loadBest();
+  const cards = ORDER.map(id=>{
+    const q=QUIZZES[id];
+    const total=q.questions.length;
+    const diffClass="diff-"+q.diff;
+    let bestLine="";
+    if(q.type==="knowledge" && best[id]!=null){
+      bestLine=`<div class="best">✓ ЛУЧШИЙ РЕЗУЛЬТАТ: ${best[id]} / ${total}</div>`;
+    }
+    const spoilerChip = q.spoiler ? `<span class="chip warn">⚠ Спойлеры</span>` : "";
+    return `<button class="card" data-quiz="${id}" aria-label="${q.title}">
+      <div class="card-idx">МОДУЛЬ ${q.idx}</div>
+      <h3>${q.title}</h3>
+      <p>${q.blurb}</p>
+      <div class="card-meta">
+        <span class="chip ${diffClass}">${q.diffLabel}</span>
+        <span class="chip">${total} вопросов</span>
+        ${spoilerChip}
+      </div>
+      ${bestLine}
+      <span class="card-go">→</span>
+    </button>`;
+  }).join("");
+
+  app.innerHTML = `
+    <section class="hero">
+      <span class="eyebrow">Терминал аттестации · доступ разрешён</span>
+      <div class="glyphs">┌────────  01000011 01001111 01000111 01001001 01010100 01001111  ────────┐</div>
+      <h1 class="title">ERGO<br><span class="p">PROXY</span></h1>
+      <p class="subtitle">Четыре испытания из мира куполов, Прокси и пробуждённых машин — от несерьёзного до безжалостного.</p>
+      <div class="cogito">Cogito <b>ergo</b> sum · мыслю, следовательно, существую</div>
+    </section>
+    <div class="divider"><span>Выбери модуль</span></div>
+    <section class="modules">${cards}</section>
+    <footer class="foot">Неофициальный фанатский тест · сделано с уважением к сериалу <span class="accent">Ergo Proxy</span> (Manglobe, 2006)</footer>
+  `;
+  document.querySelectorAll("[data-quiz]").forEach(b=>b.addEventListener("click",()=>startQuiz(b.dataset.quiz)));
+  window.scrollTo({top:0});
+}
+
+/* ============================== ENGINE ============================== */
+let cur=null;
+
+function shuffle(a){ const r=a.slice(); for(let i=r.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [r[i],r[j]]=[r[j],r[i]]; } return r; }
+
+function startQuiz(id){ const q=QUIZZES[id]; if(q.spoiler){ renderGate(id); return; } beginQuiz(id); }
+
+function renderGate(id){
+  const q=QUIZZES[id];
+  app.innerHTML=`
+    <div class="quiz">
+      <div class="qbar"><button class="backlink" id="back">← К списку тестов</button></div>
+      <div class="gate">
+        <div class="warnicon">⚠</div>
+        <h2>Осторожно, спойлеры</h2>
+        <p>Модуль «${q.title}» раскрывает главные твисты сериала — истинную природу героев и развязку. Проходи, только если досмотрел(а) до конца.</p>
+        <div class="btns">
+          <button class="btn" id="go">Я досмотрел(а) — начать</button>
+          <button class="btn ghost" id="cancel">Назад</button>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById("go").onclick=()=>beginQuiz(id);
+  document.getElementById("back").onclick=renderHome;
+  document.getElementById("cancel").onclick=renderHome;
+  window.scrollTo({top:0});
+}
+
+function beginQuiz(id){
+  const q=QUIZZES[id];
+  cur={id,i:0,answered:false,correctCount:0,scores:{}};
+  cur.order=q.questions.map(it=>shuffle([...it.options.keys()]));
+  if(q.type==="personality") Object.keys(CHARS).forEach(k=>cur.scores[k]=0);
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const q=QUIZZES[cur.id];
+  const item=q.questions[cur.i];
+  const total=q.questions.length;
+  const order=cur.order[cur.i];
+  const opts=order.map((origIdx,pos)=>{
+    const label=String.fromCharCode(65+pos);
+    const o=item.options[origIdx];
+    const text = q.type==="personality" ? o.t : o;
+    return `<button class="opt" data-idx="${origIdx}"><span class="key">${label}</span><span class="txt">${text}</span></button>`;
+  }).join("");
+
+  app.innerHTML=`
+    <div class="quiz">
+      <div class="qbar">
+        <button class="backlink" id="back">← Выйти</button>
+        <div class="qmod">${q.head}</div>
+      </div>
+      <div class="counter">ВОПРОС ${String(cur.i+1).padStart(2,"0")} / ${String(total).padStart(2,"0")}</div>
+      <div class="progress"><i style="width:${Math.round(cur.i/total*100)}%"></i></div>
+      <div class="qhead">${q.type==="personality"?"Выбери, что ближе":"Выбери один ответ"}</div>
+      <p class="question">${item.q}</p>
+      <div class="options">${opts}</div>
+      <div id="afterbox"></div>
+      <div class="qfoot" id="qfoot"></div>
+    </div>`;
+  document.getElementById("back").onclick=renderHome;
+  document.querySelectorAll(".opt").forEach(b=>b.addEventListener("click",()=>onAnswer(parseInt(b.dataset.idx,10))));
+  window.scrollTo({top:0});
+}
+
+function onAnswer(idx){
+  if(cur.answered) return;
+  cur.answered=true;
+  const q=QUIZZES[cur.id];
+  const item=q.questions[cur.i];
+  const btns=[...document.querySelectorAll(".opt")];
+  btns.forEach(b=>b.disabled=true);
+
+  if(q.type==="personality"){
+    const ch=item.options[idx].char;
+    cur.scores[ch]=(cur.scores[ch]||0)+1;
+    btns.forEach(b=>{ if(parseInt(b.dataset.idx,10)===idx) b.classList.add("correct"); else b.classList.add("dim"); });
+    advanceFoot();
+  } else {
+    const correct=item.correct;
+    if(idx===correct) cur.correctCount++;
+    btns.forEach(b=>{
+      const di=parseInt(b.dataset.idx,10);
+      if(di===correct) b.classList.add("correct");
+      else if(di===idx) b.classList.add("wrong");
+      else b.classList.add("dim");
+    });
+    const ok=idx===correct;
+    document.getElementById("afterbox").innerHTML=
+      `<div class="note ${ok?'ok':''}"><b>${ok?"◈ Верно · досье":"✕ Мимо · досье"}</b>${item.note}</div>`;
+    advanceFoot();
+  }
+  const total=q.questions.length;
+  const pel=document.querySelector(".progress i");
+  if(pel) pel.style.width=Math.round((cur.i+1)/total*100)+"%";
+}
+
+function advanceFoot(){
+  const q=QUIZZES[cur.id];
+  const last=cur.i>=q.questions.length-1;
+  document.getElementById("qfoot").innerHTML=`<button class="btn" id="next">${last?"Показать результат →":"Далее →"}</button>`;
+  const nb=document.getElementById("next");
+  nb.onclick=()=>{ if(last){ renderResult(); } else { cur.i++; cur.answered=false; renderQuestion(); } };
+  nb.focus();
+}
+
+/* ============================== RESULTS ============================== */
+function renderResult(){
+  const q=QUIZZES[cur.id];
+  if(q.type==="personality"){ renderPersona(); return; }
+
+  const total=q.questions.length, score=cur.correctCount, ratio=score/total;
+  saveBest(cur.id,score);
+  let rank,msg,grade;
+  if(cur.id==="hidden"){
+    if(ratio>=0.85){grade="g-hi";rank="Хранитель архива";msg="Ты знаешь то, что спрятано за кадром. Совет философов Ромдо кивнул бы с уважением.";}
+    else if(ratio>=0.55){grade="g-mid";rank="Внимательный зритель";msg="Крепкая эрудиция — ты ловишь отсылки, которые большинство пропускает мимо.";}
+    else{grade="g-lo";rank="Гражданин Ромдо";msg="Закадровые тайны пока ускользают. Есть повод пересмотреть — и досмотреть эндинг до конца.";}
+  } else if(cur.id==="hardcore"){
+    if(ratio>=0.85){grade="g-hi";rank="Посланник смерти";msg="Ты видел(а) всё до конца и понял(а) суть. Cogito, ergo sum — и ты определённо мыслишь.";}
+    else if(ratio>=0.55){grade="g-mid";rank="Пробуждённый";msg="Твисты усвоены, картина сложилась. Но пара тайн ещё прячется в тумане пустошей.";}
+    else{grade="g-lo";rank="Ещё в куполе";msg="Финальные откровения пока в дымке. Стоит вернуться к последним сериям — там всё и раскрывается.";}
+  } else {
+    if(ratio>=0.85){grade="g-hi";rank="Инспектор Бюро";msg="Почти безупречно. Ты смотрел(а) очень внимательно — Ре-л одобрила бы твой отчёт.";}
+    else if(ratio>=0.55){grade="g-mid";rank="Гражданин с допуском";msg="Хорошая база. Ещё немного — и полноправное гражданство Ромдо твоё.";}
+    else{grade="g-lo";rank="Заражён(а) Cogito";msg="Кое-что перепуталось в памяти. Пересмотр пойдёт на пользу — сериал того стоит.";}
+  }
+  const R=78, C=2*Math.PI*R, off=C*(1-ratio);
+  app.innerHTML=`
+    <div class="result">
+      <span class="eyebrow">${q.head} · результат</span>
+      <div class="score-ring">
+        <svg width="180" height="180" viewBox="0 0 180 180">
+          <circle class="track" cx="90" cy="90" r="${R}" fill="none" stroke-width="7"/>
+          <circle class="fill" cx="90" cy="90" r="${R}" fill="none" stroke-width="7"
+            stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${C.toFixed(1)}" id="ring"/>
+        </svg>
+        <div class="score-num"><b>${score}<span style="font-size:24px;color:var(--muted)">/${total}</span></b><span>ВЕРНЫХ ОТВЕТОВ</span></div>
+      </div>
+      <div class="rank ${grade}">${rank}</div>
+      <p class="rank-msg">${msg}</p>
+      <div class="btns">
+        <button class="btn" id="retry">Пройти заново</button>
+        <button class="btn ghost" id="home">К другим тестам</button>
+      </div>
+      <div class="hint">РЕЗУЛЬТАТ СОХРАНЁН ЛОКАЛЬНО · ПОКАЖИ ЭКРАН ДЛЯ ПРОВЕРКИ</div>
+    </div>`;
+  requestAnimationFrame(()=>setTimeout(()=>{ const r=document.getElementById("ring"); if(r) r.style.strokeDashoffset=off.toFixed(1); },80));
+  document.getElementById("retry").onclick=()=>beginQuiz(cur.id);
+  document.getElementById("home").onclick=renderHome;
+  window.scrollTo({top:0});
+}
+
+function renderPersona(){
+  const scores=cur.scores, keys=Object.keys(CHARS);
+  const max=Math.max(...keys.map(k=>scores[k]||0));
+  let winners=keys.filter(k=>(scores[k]||0)===max && max>0);
+  if(!winners.length) winners=[keys[0]];
+  const multi=winners.length>1;
+
+  const cards=winners.map(k=>{
+    const c=CHARS[k];
+    return `<div class="pcard">
+      <div class="charname">${c.name}</div>
+      <div class="chartag">«${c.tag}»</div>
+      <div class="cardbox">${c.desc.map(p=>`<p>${p}</p>`).join("")}</div>
+      <div class="cardbox rewatch"><b>◈ При пересмотре</b>${c.rw}</div>
+    </div>`;
+  }).join(`<div class="tie-sep">— и в равной мере —</div>`);
+
+  app.innerHTML=`
+    <div class="result persona">
+      <span class="eyebrow">Психопрофиль · результат</span>
+      <div class="chartag topline">${multi?"В тебе поровну от нескольких:":"Ты —"}</div>
+      ${cards}
+      <div class="btns" style="margin-top:26px">
+        <button class="btn" id="retry">Пройти заново</button>
+        <button class="btn ghost" id="home">К другим тестам</button>
+      </div>
+      <div class="hint">РЕЗУЛЬТАТ ОПРЕДЕЛЁН ПО ТВОИМ ОТВЕТАМ · МОЖНО ПЕРЕПРОЙТИ</div>
+    </div>`;
+  document.getElementById("retry").onclick=()=>beginQuiz(cur.id);
+  document.getElementById("home").onclick=renderHome;
+  window.scrollTo({top:0});
+}
+
+/* ============================== BOOT ============================== */
+renderHome();
+</script>
